@@ -93,9 +93,14 @@ d = list(c)
 print(d)
 d += c
 print(d)
-print(np.any(np.array([3,4,5])<3))
+j = np.array([3,4,5])<np.array([1,5,4])
+print(j)
+print(np.any(j))
 t = {}
 if not t:
     print('a')
 
+a = list([1,2,3,4,5])
+b = list([1,2,3])
+print(set(b).issubset(set(a)))
 

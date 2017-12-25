@@ -21,13 +21,14 @@ class Mining:
                 print('No Vertex subset fit the conditions')
                 return
             gcf[i] = None ###to release the former layer data, reduce memory use.
-            print('Finish the frequence-{} layer'.format(i))
+            print('Finish the frequence-{} layer and generate the next layer'.format(i))
 
+        print('mining on the frequence-{} layer'.format(self.frequence))
         gcf[self.frequence].findOutCurrentDdenFreSubG()
         print(gcf[self.frequence].ddfreGDic)
         print(len(gcf[self.frequence].ddfreGDic))
 
 
 if __name__ == '__main__':
-    m = Mining(4, 4, ".\\data\\adjacencyMatrix.json")
+    m = Mining(3, 4, ".\\data\\adjacencyMatrix.json")
     m.mine()

@@ -192,6 +192,8 @@ class graphContainer:
 
     def findOutCurrentDdenFreSubG(self):
         self.ddfreGDic = {}
+        # self.__delduplicategraph()  #this step lower the perform on the large amount of small graph data,
+                                      # may improve perform on small amount of large graph data
 
         glmin = len(self.graphList[0]['Vertex'])
         glmax = glmin
@@ -213,6 +215,50 @@ class graphContainer:
             self.__findDdFsGinEachGraph(eachgraph)
 
         return
+
+    def __delduplicategraph(self):  ###used only when find out frequent subgraph, and data is small amount of large data
+        i = 0
+        while(i<len(self.graphList)):
+            j = i + 1
+            while(j<len(self.graphList)):
+                if len(self.graphList[i]['Vertex']) < len(self.graphList[j]['Vertex']):
+                    if self.__iscontain(self.graphList[i], self.graphList[j]):
+                        del self.graphList[i]
+                        i = i - 1
+                        break
+                elif len(self.graphList[i]['Vertex']) >= len(self.graphList[j]['Vertex']):
+                    if self.__iscontain(self.graphList[j], self.graphList[i]):
+                        del self.graphList[j]
+                        j = j - 1
+
+                j += 1
+
+            i += 1
+        return
+
+    def __iscontain(self, graphsmall, graphbig):
+        ls = len(graphsmall['Vertex'])
+        lb = len(graphbig['Vertex'])
+        iters = 0
+        iterb = 0
+        indexb = []
+        while(iters<ls and iterb<lb):
+            if graphsmall['Vertex'][iters] == graphbig['Vertex'][iterb]:
+                indexb.append(iterb)
+                iters += 1
+                iterb += 1
+            elif graphsmall['Vertex'][iters] > graphbig['Vertex'][iterb]:
+                iterb += 1
+            elif graphsmall['Vertex'][iters] < graphbig['Vertex'][iterb]:
+                return False
+
+        if iters < ls:
+            return False
+
+        judge = (graphbig['aM'][indexb, :][:, indexb] < graphsmall['aM'])
+        if np.any(judge):
+            return False
+        return True
 
     def __findDdFsGinEachGraph(self, graph):
         glen = len(graph['Vertex'])
