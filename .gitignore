@@ -1,0 +1,7 @@
+# python file compile cache
+/.idea/
+/__pycache__/
+
+# picture file
+/midData/*.png
+/data/*.png
