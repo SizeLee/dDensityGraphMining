@@ -104,3 +104,24 @@ a = list([1,2,3,4,5])
 b = list([1,2,3])
 print(set(b).issubset(set(a)))
 
+a = {1:{1:1},2:2}
+b = a.copy()
+b[1]=1
+print(a)
+print(b)
+c = a.copy()
+c[1][1]=2
+print(a)
+print(c)
+del a[1]
+print(a)
+print(c)
+print(a=={})
+a = {1:{},2:{},3:{},4:{},5:{}}
+l = []
+for eachkey in a:
+    if a[eachkey] == {}:
+        l.append(eachkey)
+for eachkey in l:
+    del a[eachkey]
+print(a)

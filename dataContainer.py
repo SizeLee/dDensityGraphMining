@@ -307,6 +307,129 @@ class graphContainer:
         self.__combineFun(combmap, comblen, graphlen, considerFeatureNo + 1, alreadyCombine + 1, *combine, considerFeatureNo)
         # self.__combineFun(considerFeatureNo + 1, alreadyCombine + 1, *combine + (considerFeatureNo,))
 
+        return
+
+class frequentVertexContainer:
+    def __init__(self, unionedVertexSubsetNumkk, vertexmaximum):
+        self.unionedVsetNumk = unionedVertexSubsetNumkk
+        self.ddfVDic = {}
+        self.vertexSetIDDic = {}
+        self.vertexmaximum = vertexmaximum  ###频繁点集所包含的所有点的种类的数量
+        self.findAllVertex = []
+
+    def getddfVDicFromGraphContainer(self, frequentLayerGraphContainer):
+        self.ddfVDic = frequentLayerGraphContainer.ddfreGDic.copy()
+        count = 0
+        self.vertexSetIDDic = {}
+        self.vertexSetIDDic['v'] = []
+        for eachKey in self.ddfVDic:
+            vdictemp = {}
+            vdictemp['ID'] = [count]
+            vdictemp['gkey'] = [eachKey]
+            vdictemp['v'] = self.ddfVDic[eachKey]
+            self.vertexSetIDDic['v'].append(vdictemp)
+            count += 1
+        return
+
+    def generateHigherKvalueVUnionContainer(self):
+        ##todo 在之前的词典vertexSetIDDic上融合后同时将词典拓展一层赋值给result返回
+        resultContainer = frequentVertexContainer(self.unionedVsetNumk + 1)
+        resultContainer.vertexSetIDDic = self.vertexSetIDDic ##不用copy,直接在上一层基础上改,改完把上一层抛弃,加快速度,节省空间
+
+        self.__gothroughDic(resultContainer.vertexSetIDDic)
+
+        return resultContainer  ##k每一加一层,都可以检查一下上一层的findallvertex,如果有则已发现包含所有可能点最大集合(k可能还没达标),
+                                 # 如果加了新一层,其vertexSetIDDic已空,则上一层的findallvertex必然有集合,因为只有发现了allvertexset才可能让下层iddic变为空
+
+    def __gothroughDic(self, dicpointer):
+        if 'v' not in dicpointer:
+            deletelist = []
+            for eachkey in dicpointer:
+                self.__gothroughDic(dicpointer[eachkey])
+                if dicpointer[eachkey] == {}:
+                    deletelist.append(eachkey)
+
+            for eachkey in deletelist:
+                del dicpointer[eachkey]
+
+            return
+
+        else:
+            for i in range(len(dicpointer['v'])-1):
+                for j in range(i+1, len(dicpointer['v'])):
+                    mergetemp = self.__merge2vertexSet(dicpointer['v'][i], dicpointer['v'][j])##merge to vertex subset,
+                    # if merged set is no more larger, cut the merged vertex set.
+                    # In other words check if one of these two set for merge contain another
+                    if mergetemp is None:
+                        continue
+                    if len(mergetemp['v']) == self.vertexmaximum:
+                        self.findAllVertex.append(mergetemp)
+                    if mergetemp['ID'][-2] not in dicpointer:
+                        dicpointer[mergetemp['ID'][-2]] = {}
+                        dicpointer[mergetemp['ID'][-2]]['v'] = []
+                    dicpointer[mergetemp['ID'][-2]]['v'].append(mergetemp)
+
+            del dicpointer['v']
+            return
+
+    def __merge2vertexSet(self, vset1, vset2):
+        newv = self.__union2sortedlist_noContainEachOther(vset1['v'], vset2['v'])
+        if newv:
+            resultv = {}
+            resultv['v'] = newv
+            resultv['gkey'] = vset1['gkey'] + vset2['gkey']
+            if vset1['ID'][-1] < vset2['ID'][-1]:
+                resultv['ID'] = vset1['ID'].copy()
+                resultv['ID'].append(vset2['ID'][-1])
+            else:
+                resultv['ID'] = vset2['ID'].copy()
+                resultv['ID'].append(vset1['ID'][-1])
+
+            return resultv
+
+        else:
+            return
+
+    def __union2sortedlist_noContainEachOther(self, vlists, vlistb):  ##if one contains each another, return empty list
+        if len(vlists)>len(vlistb):
+            temp = vlistb
+            vlistb = vlists
+            vlists = temp
+
+        indexs = 0
+        indexb = 0
+        containflag = True
+        unionlist = []
+        while(indexs < len(vlists) and indexb < len(vlistb)):
+            if vlistb[indexb] < vlists[indexs]:
+                unionlist.append(vlistb[indexb])
+                indexb += 1
+            elif vlistb[indexb] == vlists[indexs]:
+                unionlist.append(vlistb[indexb])
+                indexb += 1
+                indexs += 1
+            else:
+                containflag = False
+                unionlist.append(vlists[indexs])
+                indexs += 1
+
+        if indexs < len(vlists):
+            # containflag = False
+            unionlist = unionlist + vlists[indexs:]
+
+        elif indexb < len(vlistb):
+            if containflag:
+                return []
+            unionlist = unionlist + vlistb[indexb:]
+
+        else:
+            if containflag:
+                return []
+
+        return unionlist
+
+
+
 if __name__ == "__main__":
     gc = graphContainer(3, 1)
     gc.loadFromFile(".\\data\\adjacencyMatrix.json")
