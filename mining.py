@@ -26,8 +26,10 @@ class Mining:
 
         print('mining on the frequence-{} layer'.format(self.frequence))
         self.gcf[self.frequence].findOutCurrentDdenFreSubG()
+
+        print('Find out {} D-density frequent vertex set(s):'.format(len(self.gcf[self.frequence].ddfreGDic)))
         print(self.gcf[self.frequence].ddfreGDic)
-        print(len(self.gcf[self.frequence].ddfreGDic))
+        print()
         return True
 
     def findtopk(self, k):
