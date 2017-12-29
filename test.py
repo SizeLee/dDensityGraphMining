@@ -118,10 +118,22 @@ print(a)
 print(c)
 print(a=={})
 a = {1:{},2:{},3:{},4:{},5:{}}
+print(len(a))
 l = []
 for eachkey in a:
     if a[eachkey] == {}:
         l.append(eachkey)
+
 for eachkey in l:
     del a[eachkey]
 print(a)
+
+a = set()
+a = a.union([1,2,3])
+a = a.union([2,3,6,7])
+print(a)
+print(len(a))
+b = list(a)
+print(b)
+
+for i in range(1,1):print(i)

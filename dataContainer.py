@@ -309,31 +309,45 @@ class graphContainer:
 
         return
 
-class frequentVertexContainer:
+    def saveddfreG(self, filename):
+        fp = open(filename, 'w')
+        json.dump(self.ddfreGDic, fp)
+        fp.close()
+        return
+
+    def recordVIDinddfreG(self):
+        recordset = set()
+        for eachkey in self.ddfreGDic:
+            recordset = recordset.union(self.ddfreGDic[eachkey])
+        return recordset
+
+
+class topKfrequentVertexContainer:
     def __init__(self, unionedVertexSubsetNumkk, vertexmaximum):
         self.unionedVsetNumk = unionedVertexSubsetNumkk
         self.ddfVDic = {}
         self.vertexSetIDDic = {}
         self.vertexmaximum = vertexmaximum  ###频繁点集所包含的所有点的种类的数量
-        self.findAllVertex = []
+        self.findAllVertexOfNextlayer = []
+        self.curlargest = {}
 
     def getddfVDicFromGraphContainer(self, frequentLayerGraphContainer):
-        self.ddfVDic = frequentLayerGraphContainer.ddfreGDic.copy()
+        self.ddfVDic = frequentLayerGraphContainer.ddfreGDic
         count = 0
         self.vertexSetIDDic = {}
-        self.vertexSetIDDic['v'] = []
+        self.vertexSetIDDic['vsetlist'] = []
         for eachKey in self.ddfVDic:
             vdictemp = {}
             vdictemp['ID'] = [count]
             vdictemp['gkey'] = [eachKey]
-            vdictemp['v'] = self.ddfVDic[eachKey]
-            self.vertexSetIDDic['v'].append(vdictemp)
+            vdictemp['vset'] = self.ddfVDic[eachKey]
+            self.vertexSetIDDic['vsetlist'].append(vdictemp)
             count += 1
         return
 
     def generateHigherKvalueVUnionContainer(self):
-        ##todo 在之前的词典vertexSetIDDic上融合后同时将词典拓展一层赋值给result返回
-        resultContainer = frequentVertexContainer(self.unionedVsetNumk + 1)
+        ##在之前的词典vertexSetIDDic上融合后同时将词典拓展一层赋值给result返回
+        resultContainer = topKfrequentVertexContainer(self.unionedVsetNumk + 1, self.vertexmaximum)
         resultContainer.vertexSetIDDic = self.vertexSetIDDic ##不用copy,直接在上一层基础上改,改完把上一层抛弃,加快速度,节省空间
 
         self.__gothroughDic(resultContainer.vertexSetIDDic)
@@ -342,7 +356,7 @@ class frequentVertexContainer:
                                  # 如果加了新一层,其vertexSetIDDic已空,则上一层的findallvertex必然有集合,因为只有发现了allvertexset才可能让下层iddic变为空
 
     def __gothroughDic(self, dicpointer):
-        if 'v' not in dicpointer:
+        if 'vsetlist' not in dicpointer:
             deletelist = []
             for eachkey in dicpointer:
                 self.__gothroughDic(dicpointer[eachkey])
@@ -355,35 +369,39 @@ class frequentVertexContainer:
             return
 
         else:
-            for i in range(len(dicpointer['v'])-1):
-                for j in range(i+1, len(dicpointer['v'])):
-                    mergetemp = self.__merge2vertexSet(dicpointer['v'][i], dicpointer['v'][j])##merge to vertex subset,
+            for i in range(len(dicpointer['vsetlist'])-1):
+                for j in range(i+1, len(dicpointer['vsetlist'])):
+                    mergetemp = self.__merge2vertexSet(dicpointer['vsetlist'][i], dicpointer['vsetlist'][j])##merge to vertex subset,
                     # if merged set is no more larger, cut the merged vertex set.
                     # In other words check if one of these two set for merge contain another
                     if mergetemp is None:
                         continue
-                    if len(mergetemp['v']) == self.vertexmaximum:
-                        self.findAllVertex.append(mergetemp)
+                    if len(mergetemp['vset']) == self.vertexmaximum: ###merge出全点图,则这些全点图在下一层中必然merge消除同时拥有所有点,所以不必等到下一层出现merge消除再判定是否全点图,每次merge即可判定。
+                        self.findAllVertexOfNextlayer.append(mergetemp)
                     if mergetemp['ID'][-2] not in dicpointer:
                         dicpointer[mergetemp['ID'][-2]] = {}
-                        dicpointer[mergetemp['ID'][-2]]['v'] = []
-                    dicpointer[mergetemp['ID'][-2]]['v'].append(mergetemp)
+                        dicpointer[mergetemp['ID'][-2]]['vsetlist'] = []
+                    dicpointer[mergetemp['ID'][-2]]['vsetlist'].append(mergetemp)
 
-            del dicpointer['v']
+            del dicpointer['vsetlist']
             return
 
     def __merge2vertexSet(self, vset1, vset2):
-        newv = self.__union2sortedlist_noContainEachOther(vset1['v'], vset2['v'])
+        newv = self.__union2sortedlist_noContainEachOther(vset1['vset'], vset2['vset'])
         if newv:
             resultv = {}
-            resultv['v'] = newv
-            resultv['gkey'] = vset1['gkey'] + vset2['gkey']
+            resultv['vset'] = newv
+            # resultv['gkey'] = vset1['gkey'] + vset2['gkey']
             if vset1['ID'][-1] < vset2['ID'][-1]:
                 resultv['ID'] = vset1['ID'].copy()
                 resultv['ID'].append(vset2['ID'][-1])
+                resultv['gkey'] = vset1['gkey'].copy()
+                resultv['gkey'].append(vset2['gkey'][-1])
             else:
                 resultv['ID'] = vset2['ID'].copy()
                 resultv['ID'].append(vset1['ID'][-1])
+                resultv['gkey'] = vset2['gkey'].copy()
+                resultv['gkey'].append(vset1['gkey'][-1])
 
             return resultv
 
@@ -428,7 +446,27 @@ class frequentVertexContainer:
 
         return unionlist
 
+    def findCurrentlayerMaximum(self): ###从当前层找到最大的k图并
+        self.curlargest = {}
+        self.curlargest['vnum'] = 0
+        self.curlargest['vsetlist'] = []
+        self.__gothroughDicAndfindLagest(self.vertexSetIDDic)
+        return self.curlargest
 
+    def __gothroughDicAndfindLagest(self, dicpointer):
+        if 'vsetlist' not in dicpointer:
+            for eachkey in dicpointer:
+                self.__gothroughDicAndfindLagest(dicpointer[eachkey])
+            return
+
+        else:
+            for eachVset in dicpointer['vsetlist']:
+                if len(eachVset['vset']) > self.curlargest['vnum']:
+                    self.curlargest['vnum'] = len(eachVset['vset'])
+                    self.curlargest['vsetlist'] = []
+                    self.curlargest['vsetlist'].append(eachVset)
+                elif len(eachVset['vset']) == self.curlargest['vnum']:
+                    self.curlargest['vsetlist'].append(eachVset)
 
 if __name__ == "__main__":
     gc = graphContainer(3, 1)
