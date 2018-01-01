@@ -137,3 +137,9 @@ b = list(a)
 print(b)
 
 for i in range(1,1):print(i)
+
+a = [i for i in range(3,7)]
+# a = a
+for each in a:
+    print(each)
+# print(a)
